@@ -5,3 +5,8 @@
 ## TO-DO:
 - Add more info.
 - Upload to Google Extension Store
+
+## Credits
+
+- ChatGPT did most the work and I am not afraid to admit it.
+- Hardest part was future-proofing the extension as ChatGPT seems to only know MV2, which will be phased out soon for MV3.
