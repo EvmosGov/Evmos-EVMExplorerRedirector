@@ -1,0 +1,26 @@
+{
+  "name": "Evmos EVM Explorer Redirector",
+  "short_name": "EvmosExplorerRedirect",
+  "version": "0.1.0",
+  "description": "Sometimes the EVM explorer works, sometimes it doesn't. Don't ask me why or how, we're just providing a tool to help developers when the explorer is down.",
+  "author": "EvmosDAO",
+  "homepage_url": "https://evmos.community",
+  "options_ui": {
+    "page": "popup.html"
+  },
+  "options_page": "settings.html",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "128": "images/icon128.png",
+    "48": "images/icon48.png",
+    "32": "images/icon32.png"
+  },
+  "permissions": ["notifications", "storage", "tabs", "webRequest"],
+  "host_permissions": ["http://*/", "https://*/"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "manifest_version": 3
+}

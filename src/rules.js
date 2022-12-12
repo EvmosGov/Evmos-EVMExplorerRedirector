@@ -1,0 +1,243 @@
+var isNewTab = false;
+var isNotify = false;
+var rules;
+var isExtEnabled;
+
+$(document).ready(function () {
+  // i18n UI
+  // tab option
+  $('.tabOption').change(function () {
+    isExtEnabled = $("input[name='extEnabled']").prop('checked');
+    isNewTab = false;
+    isNotify = false;
+    setOptions();
+  });
+  // new rule button
+  $('#new-rule').click(function () {
+    $('#rule-list').append(newRuleItem('', '', false, true, true));
+  });
+  // reset rule button
+  $('#reset-rule').click(function () {
+    var confirmReset = chrome.i18n.getMessage('confirm_reset');
+    var r = confirm(confirmReset);
+    if (r == true) {
+      $('.rule-item').remove();
+      var msg = {
+        type: 'resetRules',
+      };
+      chrome.runtime.sendMessage(msg, function (_response) {
+        console.log('[msg:send] resetRules');
+      });
+    }
+  });
+  // import rule button
+  $('#import-rule').click(function () {
+    var importedFile = $('#upload-rule').prop('files');
+    if (importedFile.length == 0) {
+      alert(chrome.i18n.getMessage('import_error_no_file'));
+      return;
+    } else {
+      var reader = new FileReader();
+      reader.readAsText(importedFile[0], 'UTF-8');
+      reader.onload = function (evt) {
+        var rulesString = evt.target.result;
+        var rulesJSON = JSON.parse(rulesString);
+        var numOfRules = rulesJSON.length;
+        if (numOfRules == 0) {
+          alert(chrome.i18n.getMessage('import_error_no_rule'));
+          return;
+        }
+        for (var i = 0; i < numOfRules; i++) {
+          var src = rulesJSON[i].src;
+          var dst = rulesJSON[i].dst;
+          var isRegex = rulesJSON[i].isRegex;
+          // var isDeleted = false;
+          var isEnabled = rulesJSON[i].isEnabled;
+
+          rules.push({
+            src: src,
+            dst: dst,
+            isEnabled: isEnabled,
+            isRegex: isRegex,
+          });
+        }
+        setOptions();
+        $('.rule-item').remove();
+        getOptions(showOptions);
+        alert(chrome.i18n.getMessage('import_success'));
+      };
+    }
+  });
+  // export rule button
+  $('#export-rule').click(function () {
+    var rulesString = JSON.stringify(rules, null, 2);
+    var blob = new Blob([rulesString], {type: 'application/json'});
+    var newLink = document.createElement('a');
+    newLink.download = 'redirecting-rules.json';
+    newLink.href = window.URL.createObjectURL(blob);
+    newLink.click();
+  });
+  // clear rule button
+  $('#clear-rule').click(function () {
+    var confirmClear = chrome.i18n.getMessage('confirm_clear');
+    var r = confirm(confirmClear);
+    if (r == true) {
+      $('.rule-item').remove();
+      rules = [];
+      setOptions();
+    }
+  });
+  // rule list drag & sort
+  $('#rule-list').sortable({
+    animation: 150,
+    handle: '.drag-item',
+    onEnd: function (_evt) {
+      gatherRulesOnForm();
+      setOptions();
+    },
+  });
+});
+
+$(document).on('click', '.is-regex', function () {
+  if ($(this).data('is-regex') == true) {
+    $(this).data('is-regex', false);
+    $(this).attr('class', 'icon icon-square-o is-regex');
+  } else if ($(this).data('is-regex') == false) {
+    $(this).data('is-regex', true);
+    $(this).attr('class', 'icon icon-check-square-o is-regex');
+  }
+  gatherRulesOnForm();
+  setOptions();
+});
+
+$(document).on('click', '.is-enabled', function () {
+  if ($(this).data('is-enabled') == true) {
+    $(this).data('is-enabled', false);
+    $(this).attr('class', 'icon icon-toggle-off is-enabled');
+  } else if ($(this).data('is-enabled') == false) {
+    $(this).data('is-enabled', true);
+    $(this).attr('class', 'icon icon-toggle-on is-enabled');
+  }
+  gatherRulesOnForm();
+  setOptions();
+});
+
+$(document).on('click', '.is-deleted', function () {
+  var confirmDelete = chrome.i18n.getMessage('confirm_delete');
+  var r = confirm(confirmDelete);
+  if (r == true) {
+    $(this).data('is-deleted', true);
+    gatherRulesOnForm();
+    setOptions();
+    $('.rule-item').remove();
+    getOptions(showOptions);
+  }
+});
+
+$(document).on('change', ".rule-item>input[type='text']", function () {
+  gatherRulesOnForm();
+  setOptions();
+});
+
+chrome.runtime.onMessage.addListener(function (
+  request,
+  _sender,
+  _sendResponse,
+) {
+  console.log('[msg:recv] ' + request.type);
+  if (request.type == 'reloadOptions') {
+    getOptions(showOptions);
+  }
+});
+
+function gatherRulesOnForm() {
+  var numOfRules = $('.rule-item').length;
+  rules = [];
+  for (var i = 0; i < numOfRules; i++) {
+    var src = $('.src:eq(' + i + ')').val();
+    var dst = $('.dst:eq(' + i + ')').val();
+    var isRegex = $('.is-regex:eq(' + i + ')').data('is-regex');
+    var isDeleted = $('.is-deleted:eq(' + i + ')').data('is-deleted');
+    var isEnabled = $('.is-enabled:eq(' + i + ')').data('is-enabled');
+    if (!isDeleted) {
+      rules.push({src: src, dst: dst, isEnabled: isEnabled, isRegex: isRegex});
+    }
+  }
+}
+
+function setOptions() {
+  var newOptions = {
+    options: {
+      isExtEnabled: isExtEnabled,
+      isNewTab: false,
+      isNotify: false,
+      rules: rules,
+    },
+  };
+  chrome.storage.sync.set(newOptions, function () {
+    var msg = {
+      type: 'syncOptions',
+      options: newOptions,
+    };
+    chrome.runtime.sendMessage(msg, function (_response) {
+      console.log('[msg:send] syncOptions');
+    });
+  });
+}
+
+function getOptions(callback) {
+  chrome.storage.sync.get('options', function (data) {
+    isExtEnabled = data.options.isExtEnabled;
+    isNewTab = data.options.isNewTab;
+    isNotify = data.options.isNotify;
+    rules = data.options.rules;
+    callback();
+  });
+}
+
+function showOptions() {
+  for (var i = 0; i < rules.length; i++) {
+    $('#rule-list').append(
+      newRuleItem(
+        rules[i].src,
+        rules[i].dst,
+        rules[i].isRegex,
+        rules[i].isEnabled,
+      ),
+    );
+  }
+}
+
+function newRuleItem(src, dst, isRegex, isEnabled) {
+  var titleEnable = chrome.i18n.getMessage('title_enable');
+  var titleDelete = chrome.i18n.getMessage('title_delete');
+  var ruleItemHTML =
+    '<li class="rule-item">' +
+    '<div title="Drag" class="icon icon-bars drag-item"></div>' +
+    '<input type="text" class="src" value=' +
+    src +
+    '>' +
+    '<input type="text" class="dst" value=' +
+    dst +
+    '>' +
+    '<div data-is-regex="' +
+    isRegex +
+    '" class="icon ' +
+    (isRegex ? 'icon-check-square-o' : 'icon-square-o') +
+    ' is-regex"></div>' +
+    '<div title="' +
+    titleEnable +
+    '" data-is-enabled="' +
+    isEnabled +
+    '" class="icon ' +
+    (isEnabled ? 'icon-toggle-on' : 'icon-toggle-off') +
+    ' is-enabled"></div>' +
+    '<div title="' +
+    titleDelete +
+    '" data-is-deleted="false" class="icon icon-ban is-deleted"></div>' +
+    '</li>';
+  return ruleItemHTML;
+}
+
+
+document.addEventListener('DOMContentLoaded', getOptions(showOptions));
