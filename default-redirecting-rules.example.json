@@ -1,0 +1,44 @@
+[
+  {
+    "src": "^https?://evm.evmos.org/address/(.*)/?$",
+    "dst": "https://escan.live/address/$1",
+    "isEnabled": true,
+    "isRegex": true
+  },
+  {
+    "src": "^https?://evm.evmos.org/address/(.*)/transactions$",
+    "dst": "https://escan.live/address/$1#evm-txs",
+    "isEnabled": true,
+    "isRegex": true
+  },
+  {
+    "src": "^https?://evm.evmos.org/address/(.*)/tokens$",
+    "dst": "https://escan.live/address/$1",
+    "isEnabled": true,
+    "isRegex": true
+  },
+  {
+    "src": "^https?://evm.evmos.org/address/(.*)/token-transfers$",
+    "dst": "https://escan.live/address/$1#token20-txs",
+    "isEnabled": true,
+    "isRegex": true
+  },
+  {
+    "src": "^https?://evm.evmos.org/token/(.*)[\\/?]$",
+    "dst": "https://escan.live/token/$1",
+    "isEnabled": true,
+    "isRegex": true
+  },
+  {
+    "src": "^https?://evm.evmos.org/tx/(.*)/?$",
+    "dst": "https://escan.live/tx/$1",
+    "isEnabled": true,
+    "isRegex": true
+  },
+  {
+    "src": "^https?://evm.evmos.org/block/(.*)/?$",
+    "dst": "https://escan.live/block/$1",
+    "isEnabled": true,
+    "isRegex": true
+  }
+]
